@@ -5,15 +5,17 @@ import matplotlib.pyplot as plt
 
 ee.Initialize(project="bharatiya-hackathon")
 
-roi = ee.Geometry.Rectangle(
-    [77.00, 28.55, 77.15, 28.70]
-)
+ROIS = [
+    ("Delhi", [77.00, 28.55, 77.15, 28.70]),
+    ("Mumbai", [72.80, 18.90, 73.05, 19.20]),
+    ("Kolkata", [88.25, 22.45, 88.50, 22.70]),
+    ("Bangalore", [77.45, 12.85, 77.75, 13.15]),
+    ("Jaipur", [75.70, 26.80, 76.00, 27.10]),
+]
 
 collection = ee.ImageCollection("LANDSAT/LC09/C02/T1_L2")
 
-#print("Images found:", collection.size().getInfo())
-
-def get_best_landsat_image():
+def get_best_landsat_image(roi):
     image = (
     collection
     .filterBounds(roi)
@@ -23,14 +25,14 @@ def get_best_landsat_image():
     )
     return image
 
-def get_rgb(image):
+def get_rgb(image,roi):
     rgb = geemap.ee_to_numpy(
     image.select(["SR_B4", "SR_B3", "SR_B2"]),
     region=roi
     )
     return rgb
 
-def get_tir(image):
+def get_tir(image,roi):
     tir = geemap.ee_to_numpy(
     image.select(["ST_B10"]),
     region=roi
@@ -38,34 +40,15 @@ def get_tir(image):
     return tir
 
 def main():
-    image = get_best_landsat_image()
-#    print(image.geometry().bounds().getInfo())
+    for idx, (city_name, coords) in enumerate(ROIS):
+        roi = ee.Geometry.Rectangle(coords)
+        image = get_best_landsat_image(roi)
+        rgb = get_rgb(image,roi)
+        tir = get_tir(image,roi)
+        np.save(f"dataset/rgb/scene_{idx:03d}_rgb.npy",rgb)
+        np.save(f"dataset/tir/scene_{idx:03d}_tir.npy",tir)
 
-    rgb = get_rgb(image)
-    tir = get_tir(image)
-
-#    print(rgb.shape)
-#    print(tir.shape)
-
-#    print(np.count_nonzero(rgb))
-#    print(np.count_nonzero(tir))
-
-#    mask = np.any(rgb > 0, axis=2)
-
-#    print(mask.sum())
-
-    np.save("dataset/rgb/rgb-001.npy",rgb)
-    np.save("dataset/tir/tir-001.npy",tir)
-
-    loaded_rgb = np.load("dataset/rgb/rgb-001.npy")
-    
-    rgb_normalized = (
-    loaded_rgb - loaded_rgb.min()
-    ) / (
-    loaded_rgb.max() - loaded_rgb.min()
-    )
-    plt.imshow(rgb_normalized)
-    plt.show()
+    print("Dataset Generation Complete!")
 
 if __name__ == "__main__":
     main()
