@@ -1,4 +1,5 @@
 import os
+# pyrefly: ignore [missing-import]
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,13 +16,9 @@ def train_color(epochs=5, batch_size=8, lr=2e-4, lambda_l1=100.0, lambda_gan=1.0
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
-    # 1. Initialize Dataset
-    dataset = ColorizationDataset(processed_dir="dataset/processed")
-    
-    # 2. Train/Validation Split (80/20)
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+    # 1. Initialize Train and Validation Datasets (Spatial Block Split)
+    train_dataset = ColorizationDataset(processed_dir="dataset/processed", split="train")
+    val_dataset = ColorizationDataset(processed_dir="dataset/processed", split="val")
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
